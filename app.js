@@ -1,6 +1,7 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var players = [];
 
 app.get('/', function(req, res) {
   res.send('hey').end();
@@ -12,7 +13,13 @@ app.get('/', function(req, res) {
 io.on('connection', function (socket) {
   // emit to everyone, but the person who sent it.
   socket.broadcast.emit('user connected');
-  console.log('user connected');
+  socket.broadcast.to(socket.id).emit('user list', players);
+  console.log('user connected', socket.id);
+
+  socket.on('user spawned', function (data) {
+    players.push(data);
+    socket.broadcast.emit('user spawned', data);
+  });
 
   // handler for new message.
   // when a client sends a 'message' packet to the server.
@@ -23,58 +30,49 @@ io.on('connection', function (socket) {
 
   // handler for disconnect
   // this will run when a user closes the stream.
-  socket.on('user disconnect', function () {
+  socket.on('user disconnected', function (data) {
     // tell everyone who disconnected.
-    io.emit('user disconnected', {});
+    io.emit('user disconnected', data);
     console.log('user disconnected');
   });
 
-});
+  // handler for movement
+  // this will run when a user moves
+  socket.on('user movement', function (data) {
+    // tell everyone who moved.
+    socket.broadcast.emit('user movement', data);
+    console.log('user movement', data);
+  });
+  // handler for shooting weapon.
+  // this will run when a user shoots his gun.
+  socket.on('user fired', function (data) {
+    // tell everyone who shot and in which direction.
+    socket.broadcast.emit('user fired', data);
+    console.log('user fired');
+  });
 
-// handler for movement
-// this will run when a user moves
-socket.on('user movement', function () {
-  // tell everyone who moved.
-  io.emit('user moved', {});
-  console.log('user moved');
-});
+  // handler for jumping.
+  // this will run when a user jumps.
+  socket.on('user jumped', function (data) {
+    // tell everyone who jumped.
+    socket.broadcast.emit('user jumped', data);
+    console.log('user jumped');
+  });
+  // handler for dying.
+  // this will run when a user dies.
+  socket.on('user died', function (data) {
+    // tell everyone who died.
+    socket.broadcast.emit('user died', data);
+    console.log('user died');
+  });
 
-});
-// handler for shooting weapon.
-// this will run when a user shoots his gun.
-socket.on('user fired', function () {
-  // tell everyone who shot and in which direction.
-  io.emit('user fired', {});
-  console.log('user fired');
-});
-
-});
-// handler for jumping.
-// this will run when a user jumps.
-socket.on('user jumped', function () {
-  // tell everyone who jumped.
-  io.emit('user jumped', {});
-  console.log('user jumped');
-});
-
-});
-// handler for dying.
-// this will run when a user dies.
-socket.on('user died', function () {
-  // tell everyone who died.
-  io.emit('user died', {});
-  console.log('user died');
-});
-
-});
-
-// handler for respawn
-// this will run when a user respawns.
-socket.on('user respawned', function () {
-  // tell everyone who respawned.
-  io.emit('user respawned', {});
-  console.log('user respawned');
-});
+  // handler for respawn
+  // this will run when a user respawns.
+  socket.on('user respawned', function (data) {
+    // tell everyone who respawned.
+    socket.broadcast.emit('user respawned', data);
+    console.log('user respawned');
+  });
 
 });
 
